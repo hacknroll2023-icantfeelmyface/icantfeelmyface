@@ -1,4 +1,4 @@
-import json
+import base64
 from io import BytesIO
 
 import face_recognition
@@ -35,7 +35,6 @@ def recog(new_image):
     face_locations = face_recognition.face_locations(test_image)
     face_encodings = face_recognition.face_encodings(test_image, face_locations)
 
-
     train_images = [
         "photos/James.png",
         "photos/Anun.png",
@@ -54,11 +53,14 @@ def recog(new_image):
         # print(train_image)
         # print(train_encoding)
         encodings.append(train_encoding)
-    
 
-    for (top, right, bottom, left), face_encoding in zip(face_locations, face_encodings):
-    # See if the face is a match for the known face(s)
-        matches = face_recognition.compare_faces(encodings, face_encoding, tolerance=0.45)
+    for (top, right, bottom, left), face_encoding in zip(
+        face_locations, face_encodings
+    ):
+        # See if the face is a match for the known face(s)
+        matches = face_recognition.compare_faces(
+            encodings, face_encoding, tolerance=0.45
+        )
 
         name = "Unknown"
 
@@ -74,16 +76,25 @@ def recog(new_image):
 
         # Draw a label with a name below the face
         text_width, text_height = draw.textsize(name)
-        draw.rectangle(((left, bottom - text_height - 10), (right, bottom)), fill=(0, 0, 255), outline=(0, 0, 255))
+        draw.rectangle(
+            ((left, bottom - text_height - 10), (right, bottom)),
+            fill=(0, 0, 255),
+            outline=(0, 0, 255),
+        )
         font = ImageFont.truetype(r"./arial.ttf", 20)
-        draw.text((left + 6, bottom - text_height - 8), name, font=font, fill=(255, 255, 255, 255))
-    
+        draw.text(
+            (left + 6, bottom - text_height - 8),
+            name,
+            font=font,
+            fill=(255, 255, 255, 255),
+        )
+
     del draw
 
     # Display the resulting image
     # pil_image.show()
 
-    #save image 
+    # save image
     pil_image.save("photos/face_recog.jpg")
 
     # convert image to bytes and return image together with names
@@ -92,10 +103,16 @@ def recog(new_image):
     # pil_image.save(imgByteArr, format='JPEG')
     # imgByteArr = imgByteArr.getvalue()
 
+    # return face_names, FileResponse("photos/face_recog.jpg", media_type="image/jpeg")
 
+    with open("photos/face_recog.jpg", "rb") as image_file:
+        encoded_string = base64.b64encode(image_file.read())
 
-    return face_names, FileResponse("photos/face_recog.jpg", media_type="image/jpeg")
+    return JSONResponse(
+        content={"names": face_names, "image": encoded_string.decode("utf-8")}
+    )
 
+    return FileResponse("photos/face_recog.jpg", media_type="image/jpeg")
 
 
 @app.post("/upload")

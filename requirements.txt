@@ -4,3 +4,5 @@ face_recognition
 fastapi
 uvicorn
 python-multipart
+pillow
+numpy
