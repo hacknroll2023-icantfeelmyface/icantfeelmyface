@@ -1,9 +1,13 @@
+import json
 from io import BytesIO
 
 import face_recognition
+import numpy as np
 import uvicorn
 from fastapi import FastAPI, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse, JSONResponse
+from PIL import Image, ImageDraw, ImageFont
 
 # test_images = ["photos/anun_ryan_test.jpg"]
 
@@ -23,16 +27,14 @@ app.add_middleware(
 def recog(new_image):
 
     test_image = face_recognition.load_image_file(new_image)
+
+    pil_image = Image.fromarray(np.asarray(test_image))
+
+    draw = ImageDraw.Draw(pil_image)
+
     face_locations = face_recognition.face_locations(test_image)
+    face_encodings = face_recognition.face_encodings(test_image, face_locations)
 
-    # tell me how many faces in the image
-    print("I found {} face(s) in this photograph.".format(len(face_locations)))
-
-    # train_images = [
-    #     "photos/james_test.jpg",
-    #     "photos/anun_train.jpg",
-    #     "photos/ryan_train2.jpg",
-    # ]
 
     train_images = [
         "photos/James.png",
@@ -52,20 +54,48 @@ def recog(new_image):
         # print(train_image)
         # print(train_encoding)
         encodings.append(train_encoding)
+    
 
-    for face_location in face_locations:
-        face_encoding = face_recognition.face_encodings(test_image, [face_location])[0]
-        matches = face_recognition.compare_faces(
-            encodings, face_encoding, tolerance=0.4
-        )
-        print(matches)
-        if True in matches:
-            index = matches.index(True)
-            name = known_face_names[index]
+    for (top, right, bottom, left), face_encoding in zip(face_locations, face_encodings):
+    # See if the face is a match for the known face(s)
+        matches = face_recognition.compare_faces(encodings, face_encoding, tolerance=0.45)
+
+        name = "Unknown"
+
+        # Or instead, use the known face with the smallest distance to the new face
+        face_distances = face_recognition.face_distance(encodings, face_encoding)
+        best_match_index = np.argmin(face_distances)
+        if matches[best_match_index]:
+            name = known_face_names[best_match_index]
             face_names.append(name)
-    print(face_names)
 
-    return face_names
+        # Draw a box around the face using the Pillow module
+        draw.rectangle(((left, top), (right, bottom)), outline=(0, 0, 255))
+
+        # Draw a label with a name below the face
+        text_width, text_height = draw.textsize(name)
+        draw.rectangle(((left, bottom - text_height - 10), (right, bottom)), fill=(0, 0, 255), outline=(0, 0, 255))
+        font = ImageFont.truetype(r"./arial.ttf", 20)
+        draw.text((left + 6, bottom - text_height - 8), name, font=font, fill=(255, 255, 255, 255))
+    
+    del draw
+
+    # Display the resulting image
+    # pil_image.show()
+
+    #save image 
+    pil_image.save("photos/face_recog.jpg")
+
+    # convert image to bytes and return image together with names
+
+    # imgByteArr = BytesIO()
+    # pil_image.save(imgByteArr, format='JPEG')
+    # imgByteArr = imgByteArr.getvalue()
+
+
+
+    return face_names, FileResponse("photos/face_recog.jpg", media_type="image/jpeg")
+
 
 
 @app.post("/upload")
