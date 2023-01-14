@@ -6,7 +6,7 @@ import numpy as np
 import uvicorn
 from fastapi import FastAPI, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import Response
 from PIL import Image, ImageDraw, ImageFont
 
 # test_images = ["photos/anun_ryan_test.jpg"]
@@ -88,13 +88,17 @@ def recog(new_image):
 
     # convert image to bytes and return image together with names
 
-    # imgByteArr = BytesIO()
-    # pil_image.save(imgByteArr, format='JPEG')
-    # imgByteArr = imgByteArr.getvalue()
+    imgByteArr = BytesIO()
+    pil_image.save(imgByteArr, format='JPEG')
+    imgByteArr = imgByteArr.getvalue()
+
+    dict = {"names": str(face_names)}
+
+    return Response(content=imgByteArr, headers= dict , media_type="image/jpeg" )
 
 
 
-    return face_names, FileResponse("photos/face_recog.jpg", media_type="image/jpeg")
+    # return face_names, Response(content=imgByteArr, media_type="image/jpeg")
 
 
 
