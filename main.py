@@ -3,23 +3,42 @@ from io import BytesIO
 import face_recognition
 import uvicorn
 from fastapi import FastAPI, File, UploadFile
+from fastapi.middleware.cors import CORSMiddleware
 
 # test_images = ["photos/anun_ryan_test.jpg"]
 
-
-
 app = FastAPI()
+origins = [
+    "http://localhost:3000",
+]
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 
 def recog(new_image):
 
-    
     test_image = face_recognition.load_image_file(new_image)
     face_locations = face_recognition.face_locations(test_image)
 
     # tell me how many faces in the image
     print("I found {} face(s) in this photograph.".format(len(face_locations)))
 
-    train_images = ["photos/james_test.jpg", "photos/anun_train.jpg", "photos/ryan_train2.jpg"]
+    # train_images = [
+    #     "photos/james_test.jpg",
+    #     "photos/anun_train.jpg",
+    #     "photos/ryan_train2.jpg",
+    # ]
+
+    train_images = [
+        "photos/James.png",
+        "photos/Anun.png",
+        "photos/Ryan.png",
+    ]
 
     known_face_names = ["James", "Anun", "Ryan"]
 
@@ -36,7 +55,9 @@ def recog(new_image):
 
     for face_location in face_locations:
         face_encoding = face_recognition.face_encodings(test_image, [face_location])[0]
-        matches = face_recognition.compare_faces(encodings, face_encoding, tolerance=0.4)
+        matches = face_recognition.compare_faces(
+            encodings, face_encoding, tolerance=0.4
+        )
         print(matches)
         if True in matches:
             index = matches.index(True)
@@ -46,25 +67,12 @@ def recog(new_image):
 
     return face_names
 
+
 @app.post("/upload")
 async def create_file(file: bytes = File()):
     file_object = BytesIO(file)
     return recog(file_object)
-if __name__ == '__main__':
-    uvicorn.run(app, host='127.0.0.1', port=8000)
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+if __name__ == "__main__":
+    uvicorn.run(app, host="127.0.0.1", port=8000)

@@ -1,0 +1,6 @@
+cmake 
+dlib 
+face_recognition
+fastapi
+uvicorn
+python-multipart
